@@ -1,378 +1,416 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-/* ================= CONFIG ================= */
-
 const API = "https://wa-segregator-backend.onrender.com/api";
-const CATEGORY_META = {
-  CRITICAL: "🔴",
-  IMPORTANT: "🟠",
-  CASUAL: "🟢",
-  NON_IMPORTANT: "⚪",
-  SPAM: "🔵",
-  FAKE: "🟣",
-};
 
-const NAV_ITEMS = [
-  { id: "overview", label: "Overview" },
-  { id: "inbox", label: "Inbox" },
-  { id: "settings", label: "Settings" },
+const roles = [
+{ id:"student", label:"Student", icon:"🎓" },
+{ id:"teacher", label:"Teacher", icon:"📚" },
+{ id:"business", label:"Business", icon:"💼" },
+{ id:"corporate", label:"Corporate", icon:"🏢" }
 ];
 
-/* ================= STYLES ================= */
+const colors = {
+CRITICAL:"#ef4444",
+IMPORTANT:"#f97316",
+CASUAL:"#22c55e",
+NON_IMPORTANT:"#94a3b8",
+SPAM:"#a855f7",
+FAKE:"#ec4899"
+};
 
-const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@300;400;500;600&display=swap');
+const pageMotion={
+initial:{opacity:0,y:40,scale:.95},
+animate:{opacity:1,y:0,scale:1},
+exit:{opacity:0,y:-40,scale:.95},
+transition:{duration:.45}
+};
 
-body{
-  margin:0;
-  font-family:Manrope,sans-serif;
-  background:linear-gradient(135deg,#0f1a15,#0e1411);
-  color:#f5f3ea;
+function greet(){
+const h=new Date().getHours();
+if(h<12) return "Good Morning";
+if(h<18) return "Good Afternoon";
+return "Good Evening";
 }
-
-.center{
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-}
-
-.card{
-  background:#161f1a;
-  border-radius:20px;
-  padding:30px;
-  width:340px;
-}
-
-.input{
-  width:100%;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  margin-top:12px;
-  background:#1c2721;
-  color:white;
-}
-
-.btn{
-  margin-top:15px;
-  padding:10px 16px;
-  border:none;
-  border-radius:10px;
-  background:linear-gradient(135deg,#4f8f6b,#2e5d47);
-  color:white;
-  cursor:pointer;
-}
-
-.btn.danger{
-  background:linear-gradient(135deg,#b33939,#7a1f1f);
-}
-
-.app{
-  display:flex;
-  min-height:100vh;
-}
-
-.sidebar{
-  width:220px;
-  background:#161f1a;
-  padding:24px;
-}
-
-.nav-item{
-  padding:10px;
-  cursor:pointer;
-  border-radius:8px;
-  margin-bottom:6px;
-}
-
-.nav-item.active{
-  background:#1f2c24;
-}
-
-.main{
-  flex:1;
-  padding:30px;
-}
-
-.heading{
-  font-family:'Cormorant Garamond',serif;
-  font-size:32px;
-  margin-bottom:20px;
-}
-
-.message{
-  margin-top:15px;
-  padding:12px;
-  background:#1c2721;
-  border-radius:8px;
-}
-`;
-
-/* ================= UTIL ================= */
-
-function getGreeting(){
-  const hour=new Date().toLocaleString("en-IN",{hour:"numeric",hour12:false,timeZone:"Asia/Kolkata"});
-  const h=parseInt(hour);
-  if(h>=5&&h<12)return{text:"Good Morning",emoji:"🌅"};
-  if(h>=12&&h<17)return{text:"Good Afternoon",emoji:"☀️"};
-  if(h>=17&&h<21)return{text:"Good Evening",emoji:"🌆"};
-  return{text:"Good Night",emoji:"🌙"};
-}
-
-async function apiFetch(path,opts={}){
-  const res=await fetch(API+path,{
-    headers:{ "Content-Type":"application/json" },
-    ...opts,
-    body:opts.body?JSON.stringify(opts.body):undefined
-  });
-  if(!res.ok) throw new Error();
-  return res.json();
-}
-
-/* ================= ROOT ================= */
 
 export default function App(){
 
-  const storedUser = JSON.parse(localStorage.getItem("wa_user"));
-  const [user,setUser] = useState(storedUser);
-  const [step,setStep] = useState(storedUser ? "app" : "welcome");
+const saved=JSON.parse(localStorage.getItem("priion_user"));
 
-  const [page,setPage]=useState("overview");
-  const [messages,setMessages]=useState([]);
-  const [stats,setStats]=useState({});
-  const [toast,setToast]=useState(null);
+const[step,setStep]=useState(saved?"dashboard":"welcome");
+const[user,setUser]=useState(saved||null);
+const[role,setRole]=useState(saved?.role||null);
 
-  const {text,emoji}=getGreeting();
+const[messages,setMessages]=useState([]);
+const[stats,setStats]=useState({});
 
-  const loadData=useCallback(async()=>{
-    try{
-      const [m,s]=await Promise.all([
-        apiFetch("/messages"),
-        apiFetch("/stats")
-      ]);
-      setMessages(m);
-      setStats(s);
-    }catch{}
-  },[]);
+const[sender,setSender]=useState("");
+const[text,setText]=useState("");
 
-  useEffect(()=>{
-    if(step==="app") loadData();
-  },[step,loadData]);
-
-  /* ================= ONBOARDING ================= */
-
-  if(step==="welcome"){
-    return(
-      <>
-        <style>{STYLES}</style>
-        <div className="center">
-          <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}}>
-            <h1 style={{fontFamily:"Cormorant Garamond, serif"}}>
-              {emoji} {text}
-            </h1>
-            <button className="btn" onClick={()=>setStep("profile")}>
-              Continue →
-            </button>
-          </motion.div>
-        </div>
-      </>
-    );
-  }
-
-  if(step==="profile"){
-    return(
-      <>
-        <style>{STYLES}</style>
-        <ProfileSetup onComplete={(u)=>{
-          localStorage.setItem("wa_user",JSON.stringify(u));
-          setUser(u);
-          setStep("app");
-        }} />
-      </>
-    );
-  }
-
-  /* ================= MAIN APP ================= */
-
-  const addMessage=async(data)=>{
-    try{
-      const msg=await apiFetch("/messages",{method:"POST",body:data});
-      setMessages(prev=>[msg,...prev]);
-      loadData();
-      setToast("Classified as "+msg.category);
-      setTimeout(()=>setToast(null),3000);
-    }catch{
-      setToast("Backend error");
-      setTimeout(()=>setToast(null),3000);
-    }
-  };
-
-  const deleteMsg=async(id)=>{
-    await apiFetch("/messages/"+id,{method:"DELETE"});
-    loadData();
-  };
-
-  const clearAll=async()=>{
-    await apiFetch("/messages",{method:"DELETE"});
-    loadData();
-  };
-
-  const resetProfile=()=>{
-    localStorage.removeItem("wa_user");
-    window.location.reload();
-  };
-
-  return(
-    <>
-      <style>{STYLES}</style>
-
-      <div className="app">
-        <aside className="sidebar">
-          <div style={{marginBottom:20,fontWeight:600}}>
-            {user?.name}
-          </div>
-          {NAV_ITEMS.map(n=>(
-            <div key={n.id}
-                 className={`nav-item ${page===n.id?"active":""}`}
-                 onClick={()=>setPage(n.id)}>
-              {n.label}
-            </div>
-          ))}
-        </aside>
-
-        <main className="main">
-          <div className="heading">
-            {emoji} {text}, {user?.name}
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={page}
-              initial={{opacity:0,y:25}}
-              animate={{opacity:1,y:0}}
-              exit={{opacity:0,y:-25}}
-              transition={{duration:0.35}}
-            >
-              {page==="overview" && (
-                <div>
-                  <strong>Total Messages:</strong> {stats.TOTAL||0}
-                  {Object.keys(CATEGORY_META).map(k=>(
-                    <div key={k}>
-                      {CATEGORY_META[k]} {k}: {stats[k]||0}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {page==="inbox" && (
-                <Inbox
-                  messages={messages}
-                  onAdd={addMessage}
-                  onDelete={deleteMsg}
-                />
-              )}
-
-              {page==="settings" && (
-                <>
-                  <button className="btn" onClick={clearAll}>
-                    Clear All Messages
-                  </button>
-                  <button className="btn danger" onClick={resetProfile}>
-                    Reset Profile
-                  </button>
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-      </div>
-
-      {toast && (
-        <div style={{
-          position:"fixed",
-          bottom:20,
-          right:20,
-          background:"#1c2721",
-          padding:"12px 18px",
-          borderRadius:12
-        }}>
-          {toast}
-        </div>
-      )}
-    </>
-  );
+async function load(){
+try{
+const m=await fetch(API+"/messages").then(r=>r.json());
+const s=await fetch(API+"/stats").then(r=>r.json());
+setMessages(m);
+setStats(s);
+}catch{}
 }
 
-/* ================= PROFILE SETUP ================= */
+useEffect(()=>{ if(step==="dashboard") load(); },[step]);
 
-function ProfileSetup({onComplete}){
-  const [name,setName]=useState("");
-  const [mobile,setMobile]=useState("");
+async function classify(){
 
-  return(
-    <div className="center">
-      <div className="card">
-        <h2 style={{fontFamily:"Cormorant Garamond, serif"}}>
-          Set Up Profile
-        </h2>
-        <input className="input"
-          placeholder="Your Name"
-          value={name}
-          onChange={e=>setName(e.target.value)}
-        />
-        <input className="input"
-          placeholder="Mobile Number"
-          value={mobile}
-          onChange={e=>setMobile(e.target.value)}
-        />
-        <button className="btn"
-          onClick={()=>onComplete({name,mobile})}>
-          Enter App →
-        </button>
-      </div>
-    </div>
-  );
+if(!text.trim()) return;
+
+const msg=await fetch(API+"/messages",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({sender:sender||"You",text})
+}).then(r=>r.json());
+
+setMessages(prev=>[msg,...prev]);
+setText("");
+load();
 }
 
-/* ================= INBOX ================= */
-
-function Inbox({messages,onAdd,onDelete}){
-  const [sender,setSender]=useState("");
-  const [text,setText]=useState("");
-
-  return(
-    <>
-      <input className="input"
-        placeholder="Sender"
-        value={sender}
-        onChange={e=>setSender(e.target.value)}
-      />
-      <textarea className="input"
-        placeholder="Type your WhatsApp message..."
-        value={text}
-        onChange={e=>setText(e.target.value)}
-      />
-      <button className="btn"
-        onClick={()=>{
-          if(!text.trim()) return;
-          onAdd({sender:sender||"You",text});
-          setText("");
-        }}>
-        Classify & Add
-      </button>
-
-      {messages.map(m=>(
-        <div key={m.id} className="message">
-          <strong>{m.sender}</strong> — {CATEGORY_META[m.category]} {m.category}
-          <div style={{marginTop:6}}>{m.text}</div>
-          <button style={{marginTop:6}} onClick={()=>onDelete(m.id)}>
-            Delete
-          </button>
-        </div>
-      ))}
-    </>
-  );
+async function deleteMsg(id){
+await fetch(API+"/messages/"+id,{method:"DELETE"});
+load();
 }
+
+function saveProfile(data){
+const u={...data,role};
+localStorage.setItem("priion_user",JSON.stringify(u));
+setUser(u);
+setStep("dashboard");
+}
+
+return(
+
+<div style={styles.page}>
+
+<AnimatePresence mode="wait">
+
+{step==="welcome" && (
+<Welcome key="w" next={()=>setStep("role")}/>
+)}
+
+{step==="role" && (
+<RoleSelect key="r" choose={(r)=>{setRole(r);setStep("profile");}}/>
+)}
+
+{step==="profile" && ( <Profile key="p" done={saveProfile}/>
+)}
+
+{step==="dashboard" && ( <Dashboard
+key="d"
+user={user}
+messages={messages}
+stats={stats}
+sender={sender}
+text={text}
+setSender={setSender}
+setText={setText}
+classify={classify}
+deleteMsg={deleteMsg}
+/>
+)}
+
+</AnimatePresence>
+
+</div>
+
+);
+}
+
+function Welcome({next}){
+return(
+<motion.div {...pageMotion} style={styles.center}>
+
+<div style={{textAlign:"center"}}>
+
+<div style={styles.logo}>PRIION</div>
+
+<div style={styles.tagline}>
+Prioritise What Matters
+</div>
+
+<button style={styles.btn} onClick={next}>
+Enter →
+</button>
+
+</div>
+
+</motion.div>
+);
+}
+
+function RoleSelect({choose}){
+
+return(
+
+<motion.div {...pageMotion} style={styles.center}>
+
+<div style={styles.card}>
+
+<h2>Select Role</h2>
+
+<div style={styles.roleGrid}>
+
+{roles.map(r=>(
+
+<div
+key={r.id}
+style={styles.role}
+onClick={()=>choose(r.id)}
+>
+<div style={{fontSize:28}}>{r.icon}</div>
+<div>{r.label}</div>
+</div>
+))}
+
+</div>
+
+</div>
+
+</motion.div>
+
+);
+}
+
+function Profile({done}){
+
+const[name,setName]=useState("");
+const[phone,setPhone]=useState("");
+
+return(
+
+<motion.div {...pageMotion} style={styles.center}>
+
+<div style={styles.card}>
+
+<h2>Your Details</h2>
+
+<input
+style={styles.input}
+placeholder="Name"
+value={name}
+onChange={e=>setName(e.target.value)}
+/>
+
+<input
+style={styles.input}
+placeholder="Phone"
+value={phone}
+onChange={e=>setPhone(e.target.value)}
+/>
+
+<button style={styles.btn} onClick={()=>done({name,phone})}>
+Continue → </button>
+
+</div>
+
+</motion.div>
+
+);
+}
+
+function Dashboard({
+user,messages,stats,
+sender,text,setSender,setText,
+classify,deleteMsg
+}){
+
+return(
+
+<motion.div {...pageMotion} style={styles.container}>
+
+<h2>{greet()}, {user.name}</h2>
+
+<div style={styles.grid}>
+
+<Card label="Critical" value={stats.CRITICAL||0}/>
+<Card label="Important" value={stats.IMPORTANT||0}/>
+<Card label="Spam" value={stats.SPAM||0}/>
+
+</div>
+
+<div style={styles.card}>
+
+<h3>Classify Message</h3>
+
+<input
+style={styles.input}
+placeholder="Sender"
+value={sender}
+onChange={e=>setSender(e.target.value)}
+/>
+
+<textarea
+style={styles.input}
+placeholder="Paste message"
+value={text}
+onChange={e=>setText(e.target.value)}
+/>
+
+<button style={styles.btn} onClick={classify}>
+Classify
+</button>
+
+</div>
+
+<div style={styles.card}>
+
+<h3>Messages</h3>
+
+{messages.map(m=>(
+<div key={m.id} style={styles.msg}>
+
+<div>
+<strong>{m.sender}</strong>
+<div style={{opacity:.7,fontSize:14}}>
+{m.text}
+</div>
+</div>
+
+<div style={{
+...styles.badge,
+background:colors[m.category]
+}}>
+{m.category}
+</div>
+
+<button
+style={styles.delete}
+onClick={()=>deleteMsg(m.id)}
+>
+Delete
+</button>
+
+</div>
+))}
+
+</div>
+
+</motion.div>
+
+);
+}
+
+function Card({label,value}){
+return(
+<div style={styles.stat}>
+<div style={{opacity:.6}}>{label}</div>
+<div style={{fontSize:24,fontWeight:700}}>{value}</div>
+</div>
+);
+}
+
+const styles={
+
+page:{
+minHeight:"100vh",
+background:"radial-gradient(circle at top left,#0f172a,#020617)",
+color:"#e5e7eb",
+fontFamily:"Inter"
+},
+
+center:{
+height:"100vh",
+display:"flex",
+alignItems:"center",
+justifyContent:"center"
+},
+
+logo:{
+fontFamily:"Playfair Display",
+fontSize:64,
+letterSpacing:4
+},
+
+tagline:{
+opacity:.7,
+marginBottom:40
+},
+
+btn:{
+padding:"10px 18px",
+background:"#38bdf8",
+border:"none",
+borderRadius:8,
+cursor:"pointer"
+},
+
+card:{
+background:"rgba(15,23,42,0.6)",
+padding:20,
+borderRadius:16,
+border:"1px solid rgba(255,255,255,.08)",
+marginBottom:20
+},
+
+container:{
+maxWidth:1000,
+margin:"auto",
+padding:20
+},
+
+grid:{
+display:"grid",
+gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",
+gap:20,
+marginBottom:20
+},
+
+stat:{
+background:"rgba(15,23,42,0.6)",
+padding:20,
+borderRadius:16
+},
+
+input:{
+width:"100%",
+padding:10,
+marginTop:10,
+borderRadius:8,
+border:"1px solid rgba(255,255,255,.1)",
+background:"#020617",
+color:"#fff"
+},
+
+msg:{
+display:"flex",
+justifyContent:"space-between",
+alignItems:"center",
+marginTop:12
+},
+
+badge:{
+padding:"4px 8px",
+borderRadius:6,
+fontSize:12
+},
+
+delete:{
+border:"none",
+background:"transparent",
+color:"#ef4444",
+cursor:"pointer"
+},
+
+roleGrid:{
+display:"grid",
+gridTemplateColumns:"repeat(2,1fr)",
+gap:14,
+marginTop:20
+},
+
+role:{
+background:"rgba(255,255,255,.05)",
+padding:20,
+borderRadius:12,
+textAlign:"center",
+cursor:"pointer"
+}
+
+};
