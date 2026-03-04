@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, RotateCcw } from "lucide-react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 const API = "https://wa-segregator-backend.onrender.com/api";
 
 const COLORS = {
-  CRITICAL: "#ff4d4d",
-  IMPORTANT: "#f9a825",
-  CASUAL: "#42a5f5",
-  NON_IMPORTANT: "#9e9e9e",
-  SPAM: "#ab47bc",
-  FAKE: "#26c6da",
+  CRITICAL: "#ff4d4f",
+  IMPORTANT: "#faad14",
+  CASUAL: "#1890ff",
+  NON_IMPORTANT: "#8c8c8c",
+  SPAM: "#722ed1",
+  FAKE: "#13c2c2",
 };
 
 export default function App() {
@@ -36,11 +30,11 @@ export default function App() {
   const [text, setText] = useState("");
   const [stats, setStats] = useState({});
 
-  const pageAnim = {
+  const anim = {
     initial: { opacity: 0, y: 40 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -40 },
-    transition: { duration: 0.4 },
+    transition: { duration: 0.4 }
   };
 
   useEffect(() => {
@@ -63,23 +57,19 @@ export default function App() {
 
     const res = await fetch(`${API}/classify`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sender, text }),
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ sender, text })
     });
 
     const data = await res.json();
 
     setMessages([data, ...messages]);
-
     loadStats();
 
     setText("");
     setSender("");
-  };
-
-  const resetProfile = () => {
-    localStorage.removeItem("priion_user");
-    window.location.reload();
   };
 
   const saveProfile = () => {
@@ -93,34 +83,44 @@ export default function App() {
     setStep("dashboard");
   };
 
+  const resetProfile = () => {
+
+    localStorage.removeItem("priion_user");
+
+    window.location.reload();
+  };
+
   const chartData = Object.keys(stats || {}).map((k) => ({
     name: k,
-    value: stats[k],
+    value: stats[k]
   }));
 
   return (
-    <div style={styles.container}>
+    <div style={styles.app}>
 
       <AnimatePresence mode="wait">
 
         {step === "intro" && (
-          <motion.div key="intro" {...pageAnim} style={styles.center}>
+          <motion.div key="intro" {...anim} style={styles.center}>
             <h1 style={styles.title}>PRIION</h1>
             <p style={styles.subtitle}>Prioritise What Matters</p>
-            <button style={styles.button} onClick={() => setStep("role")}>
+
+            <button style={styles.btn} onClick={() => setStep("role")}>
               Enter
             </button>
           </motion.div>
         )}
 
         {step === "role" && (
-          <motion.div key="role" {...pageAnim} style={styles.center}>
-            <h2>Select your role</h2>
+          <motion.div key="role" {...anim} style={styles.center}>
+
+            <h2>Select Role</h2>
 
             {["Student", "Teacher", "Business", "Corporate"].map((r) => (
+
               <button
                 key={r}
-                style={styles.roleButton}
+                style={styles.roleBtn}
                 onClick={() => {
                   setRole(r);
                   setStep("profile");
@@ -128,12 +128,14 @@ export default function App() {
               >
                 {r}
               </button>
+
             ))}
           </motion.div>
         )}
 
         {step === "profile" && (
-          <motion.div key="profile" {...pageAnim} style={styles.center}>
+          <motion.div key="profile" {...anim} style={styles.center}>
+
             <h2>Welcome to PRIION</h2>
 
             <input
@@ -150,44 +152,54 @@ export default function App() {
               onChange={(e) => setPhone(e.target.value)}
             />
 
-            <button style={styles.button} onClick={saveProfile}>
+            <button style={styles.btn} onClick={saveProfile}>
               Continue
             </button>
+
           </motion.div>
         )}
 
         {step === "dashboard" && (
-          <motion.div key="dash" {...pageAnim} style={styles.dashboard}>
+          <motion.div key="dashboard" {...anim} style={styles.dashboard}>
 
             <div style={styles.header}>
+
               <div>
                 <h1>PRIION</h1>
                 <p>{user?.name}</p>
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
+              <div style={styles.headerBtns}>
+
                 <button onClick={loadStats} style={styles.iconBtn}>
-                  <RefreshCw size={16} />
+                  <RefreshCw size={18} />
                 </button>
 
                 <button onClick={resetProfile} style={styles.iconBtn}>
-                  <RotateCcw size={16} />
+                  <RotateCcw size={18} />
                 </button>
+
               </div>
+
             </div>
 
             <div style={styles.cards}>
 
               {["CRITICAL", "IMPORTANT", "SPAM"].map((c) => (
+
                 <div key={c} style={styles.card}>
+
                   <h3>{c}</h3>
+
                   <h2>{stats[c] || 0}</h2>
+
                 </div>
+
               ))}
 
             </div>
 
-            <div style={styles.classifyBox}>
+            <div style={styles.box}>
 
               <h3>Classify Message</h3>
 
@@ -205,26 +217,34 @@ export default function App() {
                 onChange={(e) => setText(e.target.value)}
               />
 
-              <button style={styles.button} onClick={classify}>
+              <button style={styles.btn} onClick={classify}>
                 Classify
               </button>
 
             </div>
 
-            <div style={styles.chartBox}>
+            <div style={styles.chart}>
+
               <ResponsiveContainer width="100%" height={300}>
+
                 <PieChart>
+
                   <Pie data={chartData} dataKey="value">
+
                     {chartData.map((entry, index) => (
-                      <Cell
-                        key={index}
-                        fill={COLORS[entry.name] || "#888"}
-                      />
+
+                      <Cell key={index} fill={COLORS[entry.name] || "#888"} />
+
                     ))}
+
                   </Pie>
+
                   <Tooltip />
+
                 </PieChart>
+
               </ResponsiveContainer>
+
             </div>
 
             <div style={styles.messages}>
@@ -234,10 +254,15 @@ export default function App() {
               {messages.length === 0 && <p>No messages yet</p>}
 
               {messages.map((m, i) => (
+
                 <div key={i} style={styles.msg}>
+
                   <b>{m.category}</b>
+
                   <p>{m.text}</p>
+
                 </div>
+
               ))}
 
             </div>
@@ -246,62 +271,62 @@ export default function App() {
         )}
 
       </AnimatePresence>
+
     </div>
   );
 }
 
 const styles = {
 
-  container: {
+  app: {
     minHeight: "100vh",
     background: "#050b1a",
     color: "white",
-    fontFamily: "sans-serif",
+    fontFamily: "sans-serif"
   },
 
   center: {
+    height: "100vh",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    height: "100vh",
-    gap: 20,
+    gap: 20
   },
 
   title: {
     fontSize: 60,
-    fontWeight: "bold",
+    fontWeight: "bold"
   },
 
   subtitle: {
-    fontSize: 18,
-    opacity: 0.7,
+    opacity: 0.7
   },
 
-  button: {
+  btn: {
     padding: "10px 20px",
-    background: "#42a5f5",
+    background: "#1890ff",
     border: "none",
     borderRadius: 8,
     color: "white",
-    cursor: "pointer",
+    cursor: "pointer"
   },
 
-  roleButton: {
+  roleBtn: {
     padding: 12,
-    width: 200,
+    width: 220,
     borderRadius: 10,
     background: "#111c3a",
     border: "1px solid #2c3f66",
     color: "white",
-    cursor: "pointer",
+    cursor: "pointer"
   },
 
   input: {
     padding: 10,
     borderRadius: 8,
     border: "1px solid #333",
-    width: 250,
+    width: 260
   },
 
   textarea: {
@@ -309,17 +334,22 @@ const styles = {
     borderRadius: 8,
     border: "1px solid #333",
     width: "100%",
-    height: 120,
+    height: 120
   },
 
   dashboard: {
-    padding: 30,
+    padding: 30
   },
 
   header: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "center"
+  },
+
+  headerBtns: {
+    display: "flex",
+    gap: 10
   },
 
   iconBtn: {
@@ -328,40 +358,40 @@ const styles = {
     border: "none",
     background: "#1b2c52",
     color: "white",
-    cursor: "pointer",
+    cursor: "pointer"
   },
 
   cards: {
     display: "flex",
     gap: 20,
-    marginTop: 20,
+    marginTop: 20
   },
 
   card: {
     padding: 20,
     borderRadius: 12,
     background: "#0f1a38",
-    width: 150,
+    width: 160
   },
 
-  classifyBox: {
+  box: {
     marginTop: 30,
     display: "flex",
     flexDirection: "column",
-    gap: 10,
+    gap: 10
   },
 
-  chartBox: {
-    marginTop: 40,
+  chart: {
+    marginTop: 40
   },
 
   messages: {
-    marginTop: 40,
+    marginTop: 40
   },
 
   msg: {
     padding: 10,
-    borderBottom: "1px solid #333",
-  },
+    borderBottom: "1px solid #333"
+  }
 
 };
