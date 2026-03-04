@@ -61,7 +61,7 @@ export default function App() {
 
 const saved = JSON.parse(localStorage.getItem("priion_user"));
 
-const [step, setStep] = useState(saved ? "dashboard" : "welcome");
+const [step, setStep] = useState("intro");
 const [user, setUser] = useState(saved || null);
 const [role, setRole] = useState(saved?.role || null);
 
