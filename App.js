@@ -16,11 +16,11 @@ const COLORS = {
 
 export default function App() {
 
-  const saved = JSON.parse(localStorage.getItem("priion_user"));
+  const savedUser = JSON.parse(localStorage.getItem("priion_user") || "null");
 
-  const [step, setStep] = useState(saved ? "dashboard" : "intro");
-  const [role, setRole] = useState(saved?.role || "");
-  const [user, setUser] = useState(saved || null);
+  const [step, setStep] = useState(savedUser ? "dashboard" : "intro");
+  const [role, setRole] = useState(savedUser?.role || "");
+  const [user, setUser] = useState(savedUser);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -31,10 +31,10 @@ export default function App() {
   const [stats, setStats] = useState({});
 
   const anim = {
-    initial: { opacity: 0, y: 40 },
+    initial: { opacity: 0, y: 60 },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -40 },
-    transition: { duration: 0.4 }
+    exit: { opacity: 0, y: -60 },
+    transition: { duration: 0.45 }
   };
 
   useEffect(() => {
@@ -57,9 +57,7 @@ export default function App() {
 
     const res = await fetch(`${API}/classify`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sender, text })
     });
 
@@ -79,14 +77,12 @@ export default function App() {
     localStorage.setItem("priion_user", JSON.stringify(data));
 
     setUser(data);
-
     setStep("dashboard");
   };
 
   const resetProfile = () => {
 
     localStorage.removeItem("priion_user");
-
     window.location.reload();
   };
 
@@ -96,6 +92,7 @@ export default function App() {
   }));
 
   return (
+
     <div style={styles.app}>
 
       <AnimatePresence mode="wait">
@@ -105,7 +102,7 @@ export default function App() {
             <h1 style={styles.title}>PRIION</h1>
             <p style={styles.subtitle}>Prioritise What Matters</p>
 
-            <button style={styles.btn} onClick={() => setStep("role")}>
+            <button style={styles.mainBtn} onClick={() => setStep("role")}>
               Enter
             </button>
           </motion.div>
@@ -114,7 +111,7 @@ export default function App() {
         {step === "role" && (
           <motion.div key="role" {...anim} style={styles.center}>
 
-            <h2>Select Role</h2>
+            <h2>Select Your Role</h2>
 
             {["Student", "Teacher", "Business", "Corporate"].map((r) => (
 
@@ -130,29 +127,30 @@ export default function App() {
               </button>
 
             ))}
+
           </motion.div>
         )}
 
         {step === "profile" && (
           <motion.div key="profile" {...anim} style={styles.center}>
 
-            <h2>Welcome to PRIION</h2>
+            <h2>Setup Profile</h2>
 
             <input
               style={styles.input}
-              placeholder="Name"
+              placeholder="Your Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
 
             <input
               style={styles.input}
-              placeholder="Mobile"
+              placeholder="Phone Number"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
 
-            <button style={styles.btn} onClick={saveProfile}>
+            <button style={styles.mainBtn} onClick={saveProfile}>
               Continue
             </button>
 
@@ -160,6 +158,7 @@ export default function App() {
         )}
 
         {step === "dashboard" && (
+
           <motion.div key="dashboard" {...anim} style={styles.dashboard}>
 
             <div style={styles.header}>
@@ -172,11 +171,11 @@ export default function App() {
               <div style={styles.headerBtns}>
 
                 <button onClick={loadStats} style={styles.iconBtn}>
-                  <RefreshCw size={18} />
+                  <RefreshCw size={18}/>
                 </button>
 
                 <button onClick={resetProfile} style={styles.iconBtn}>
-                  <RotateCcw size={18} />
+                  <RotateCcw size={18}/>
                 </button>
 
               </div>
@@ -185,12 +184,11 @@ export default function App() {
 
             <div style={styles.cards}>
 
-              {["CRITICAL", "IMPORTANT", "SPAM"].map((c) => (
+              {Object.keys(COLORS).slice(0,3).map((c) => (
 
                 <div key={c} style={styles.card}>
 
                   <h3>{c}</h3>
-
                   <h2>{stats[c] || 0}</h2>
 
                 </div>
@@ -201,23 +199,23 @@ export default function App() {
 
             <div style={styles.box}>
 
-              <h3>Classify Message</h3>
+              <h3>Classify WhatsApp Message</h3>
 
               <input
                 style={styles.input}
                 placeholder="Sender"
                 value={sender}
-                onChange={(e) => setSender(e.target.value)}
+                onChange={(e)=>setSender(e.target.value)}
               />
 
               <textarea
                 style={styles.textarea}
-                placeholder="Paste WhatsApp message"
+                placeholder="Paste WhatsApp message..."
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e)=>setText(e.target.value)}
               />
 
-              <button style={styles.btn} onClick={classify}>
+              <button style={styles.mainBtn} onClick={classify}>
                 Classify
               </button>
 
@@ -225,21 +223,19 @@ export default function App() {
 
             <div style={styles.chart}>
 
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={280}>
 
                 <PieChart>
 
                   <Pie data={chartData} dataKey="value">
 
-                    {chartData.map((entry, index) => (
-
+                    {chartData.map((entry,index)=>(
                       <Cell key={index} fill={COLORS[entry.name] || "#888"} />
-
                     ))}
 
                   </Pie>
 
-                  <Tooltip />
+                  <Tooltip/>
 
                 </PieChart>
 
@@ -249,149 +245,156 @@ export default function App() {
 
             <div style={styles.messages}>
 
-              <h3>Messages</h3>
+              <h3>Recent Messages</h3>
 
               {messages.length === 0 && <p>No messages yet</p>}
 
-              {messages.map((m, i) => (
-
+              {messages.map((m,i)=>(
                 <div key={i} style={styles.msg}>
-
                   <b>{m.category}</b>
-
                   <p>{m.text}</p>
-
                 </div>
-
               ))}
 
             </div>
 
           </motion.div>
+
         )}
 
       </AnimatePresence>
 
     </div>
+
   );
+
 }
 
 const styles = {
 
-  app: {
-    minHeight: "100vh",
-    background: "#050b1a",
-    color: "white",
-    fontFamily: "sans-serif"
-  },
+app:{
+  minHeight:"100vh",
+  background:"linear-gradient(160deg,#050b1a,#020617)",
+  color:"white",
+  fontFamily:"Space Grotesk, sans-serif"
+},
 
-  center: {
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 20
-  },
+center:{
+  height:"100vh",
+  display:"flex",
+  flexDirection:"column",
+  alignItems:"center",
+  justifyContent:"center",
+  gap:20,
+  padding:20,
+  textAlign:"center"
+},
 
-  title: {
-    fontSize: 60,
-    fontWeight: "bold"
-  },
+title:{
+  fontSize:64,
+  fontWeight:700
+},
 
-  subtitle: {
-    opacity: 0.7
-  },
+subtitle:{
+  opacity:0.7,
+  fontSize:18
+},
 
-  btn: {
-    padding: "10px 20px",
-    background: "#1890ff",
-    border: "none",
-    borderRadius: 8,
-    color: "white",
-    cursor: "pointer"
-  },
+mainBtn:{
+  padding:"12px 26px",
+  background:"#2563eb",
+  border:"none",
+  borderRadius:10,
+  color:"white",
+  cursor:"pointer"
+},
 
-  roleBtn: {
-    padding: 12,
-    width: 220,
-    borderRadius: 10,
-    background: "#111c3a",
-    border: "1px solid #2c3f66",
-    color: "white",
-    cursor: "pointer"
-  },
+roleBtn:{
+  width:260,
+  padding:14,
+  borderRadius:12,
+  border:"1px solid #24304f",
+  background:"#0f172a",
+  color:"white",
+  cursor:"pointer"
+},
 
-  input: {
-    padding: 10,
-    borderRadius: 8,
-    border: "1px solid #333",
-    width: 260
-  },
+input:{
+  padding:12,
+  borderRadius:10,
+  border:"1px solid #24304f",
+  background:"#020617",
+  color:"white",
+  width:260
+},
 
-  textarea: {
-    padding: 10,
-    borderRadius: 8,
-    border: "1px solid #333",
-    width: "100%",
-    height: 120
-  },
+textarea:{
+  padding:12,
+  borderRadius:10,
+  border:"1px solid #24304f",
+  background:"#020617",
+  color:"white",
+  width:"100%",
+  height:120
+},
 
-  dashboard: {
-    padding: 30
-  },
+dashboard:{
+  padding:30
+},
 
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
-  },
+header:{
+  display:"flex",
+  justifyContent:"space-between",
+  alignItems:"center"
+},
 
-  headerBtns: {
-    display: "flex",
-    gap: 10
-  },
+headerBtns:{
+  display:"flex",
+  gap:10
+},
 
-  iconBtn: {
-    padding: 10,
-    borderRadius: 8,
-    border: "none",
-    background: "#1b2c52",
-    color: "white",
-    cursor: "pointer"
-  },
+iconBtn:{
+  background:"#0f172a",
+  border:"none",
+  borderRadius:10,
+  padding:10,
+  cursor:"pointer",
+  color:"white"
+},
 
-  cards: {
-    display: "flex",
-    gap: 20,
-    marginTop: 20
-  },
+cards:{
+  display:"flex",
+  gap:20,
+  marginTop:20,
+  flexWrap:"wrap"
+},
 
-  card: {
-    padding: 20,
-    borderRadius: 12,
-    background: "#0f1a38",
-    width: 160
-  },
+card:{
+  background:"rgba(255,255,255,0.05)",
+  backdropFilter:"blur(10px)",
+  padding:20,
+  borderRadius:14,
+  minWidth:150
+},
 
-  box: {
-    marginTop: 30,
-    display: "flex",
-    flexDirection: "column",
-    gap: 10
-  },
+box:{
+  marginTop:30,
+  display:"flex",
+  flexDirection:"column",
+  gap:10
+},
 
-  chart: {
-    marginTop: 40
-  },
+chart:{
+  marginTop:40
+},
 
-  messages: {
-    marginTop: 40
-  },
+messages:{
+  marginTop:40
+},
 
-  msg: {
-    padding: 10,
-    borderBottom: "1px solid #333"
-  }
+msg:{
+  padding:12,
+  borderBottom:"1px solid #24304f"
+}
 
 };
